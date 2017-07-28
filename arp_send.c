@@ -10,7 +10,7 @@
 
 char packet[p_size];
 
-void send_arp();
+char* send_arp(char *s_ip, char *d_ip);
 
 struct arp_header{
 	u_short hard_type; //2 byte//
@@ -36,12 +36,12 @@ int main(int argc, char* argv[]){
 	}
 	printf("\t BEST OF THE BEST 6TH ARP PACKET SENDER \t \n");
 	printf("\t BY donghyeon2 \t \n");
-	printf("\t USAGE : [interface] [sender ip] [target ip] \t \n");
-	send_arp(argv[2]);
+	send_arp(argv[2], argv[3]);
+	pcap_sendpacket(fd, packet, sizeof(packet));
 	return 0;
 }
 
-void send_arp(char *mac){
+char *send_arp(char *s_ip, char*d_ip){
 	struct ether_header *ep;
 	struct arp_header *arp;
 	ep = (struct ether_header*)packet;
@@ -63,6 +63,10 @@ void send_arp(char *mac){
 	arp->procol_size = 0x04;
 	arp->operation = 0x01;
 	memcpy(arp->s_mac, ep->ether_shost, 6);
-	inet_pton(AF_INET, mac, arp->s_ip);
-	
+	inet_pton(AF_INET, s_ip, arp->s_ip);
+	memcpy(arp->d_mac, ep->ether_dhost, 6);
+	inet_pton(AF_INET, d_ip, arp->d_ip);
+	memcpy(packet+14, arp, sizeof(arp));
+	memset(packet+66, 0, sizeof(packet));
+	return packet;
 }
