@@ -1,12 +1,15 @@
-#include <pcap.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <net/ethernet.h>
+#include <pcap/pcap.h>
+#include <string.h>
 
 #define p_size 1024
 
-const unsigned char* packet[p_size];
+char packet[p_size];
+
 void send_arp();
 
 struct ip_H{
@@ -23,35 +26,32 @@ struct ip_H{
 }__attribute__((packed));
 
 int main(int argc, char* argv[]){
-	printf("\t Best of the Best 6th ARP_SENDER \t\n");
-	printf("Usage : [adapter] [ip] [gateway] \n");
+	pcap_t *fd;
+	char errbuf[PCAP_ERRBUF_SIZE];
+	struct bpf_program fp;
+	memset(packet, 0, sizeof(packet));
+	fd = pcap_open_live(argv[1], 65536, 0, 1000, errbuf); //maxlength of packet 65536//
+	if (fd == NULL){
+		printf("device error %s \n", errbuf);
+		exit(1);
+	}
+	send_arp();
 	return 0;
 }
 
 void send_arp(){
 	struct ether_header *ep;
-	struct ip_H *ip;
-	ep->ether_dhost[0] = "\xff";
-	ep->ether_dhost[1] = "\xff";
-	ep->ether_dhost[2] = "\xff";
-	ep->ether_dhost[3] = "\xff";
-	ep->ether_dhost[4] = "\xff";
-	ep->dhost[5] = "\xff";
-	ep->shost[0] = "\x12";
-	ep->shost[1] = "\x34";
-	ep->shost[2] = "\x56";
-	ep->shost[3] = "\x78";
-	ep->shost[4] = "\x9a";
-	ep->shost[5] = "\xbc";
-
-	ep->etheR_type = htons(ETHERTYPE_ARP);
-	
-	memcpy(ip->ip_src, 1, sizeof(ip->ip_src));
+	ep = (struct ether_header*)packet;
 	for(int i=0; i<6; i++){
-		packet[i] = ep->dhost[i];
-		for(int j=6; j<12; j++){
-			packet[i] = ep->shost[i];
-		}
+		ep->ether_dhost[i] = 0xff;
 	}
-
+	ep->ether_shost[0] = 0x00;
+	ep->ether_shost[1] = 0x0c;
+	ep->ether_shost[2] = 0x29;
+	ep->ether_shost[3] = 0x53;
+	ep->ether_shost[4] = 0xd5;
+	ep->ether_shost[5] = 0x90;
+	ep->ether_type = ntohs(ETHERTYPE_ARP);
+	memcpy(packet, ep->ether_dhost, 6);
+	memcpy(packet+6, ep->ether_shost, 6);
 }
