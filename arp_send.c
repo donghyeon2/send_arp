@@ -6,7 +6,7 @@
 #include <pcap/pcap.h>
 #include <string.h>
 
-#define p_size 1024
+#define p_size 128
 
 char packet[p_size];
 
@@ -29,6 +29,10 @@ int main(int argc, char* argv[]){
 	char errbuf[PCAP_ERRBUF_SIZE];
 	struct bpf_program fp;
 	memset(packet, 0, sizeof(packet));
+	if(argc =! 3){
+		printf("use this [dev] [my-ip] [target -ip]");
+		exit(1);
+	}
 	fd = pcap_open_live(argv[1], 65536, 0, 1000, errbuf); //maxlength of packet 65536//
 	if (fd == NULL){
 		printf("device error %s \n", errbuf);
