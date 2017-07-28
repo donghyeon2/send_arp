@@ -12,17 +12,16 @@ char packet[p_size];
 
 void send_arp();
 
-struct ip_H{
-	unsigned char ip_v4:4, ip_hl:4;
-	unsigned char ip_tos;
-	unsigned short int ip_len;
-	unsigned short int ip_id;
-	unsigned short int ip_off;
-	unsigned char ip_ttl;
-	unsigned char ip_p;
-	unsigned short int ip_sum;
-	unsigned int ip_src;
-	unsigned int ip_dst;
+struct arp_header{
+	u_short hard_type; //2 byte//
+	u_short procol_type; //2 byte//
+	u_char hard_size; //1 byte//
+	u_char procol_size; //1 byte//
+	u_short operation; //2 byte//
+	u_char s_mac[6]; //6 byte//
+	u_char s_ip[INET_ADDRSTRLEN]; //16 byte//
+	u_char d_mac[6];//6 byte//
+	u_char d_ip[INET_ADDRSTRLEN];//16 byte//
 }__attribute__((packed));
 
 int main(int argc, char* argv[]){
@@ -35,13 +34,18 @@ int main(int argc, char* argv[]){
 		printf("device error %s \n", errbuf);
 		exit(1);
 	}
-	send_arp();
+	printf("\t BEST OF THE BEST 6TH ARP PACKET SENDER \t \n");
+	printf("\t BY donghyeon2 \t \n");
+	printf("\t USAGE : [interface] [sender ip] [target ip] \t \n");
+	send_arp(argv[2]);
 	return 0;
 }
 
-void send_arp(){
+void send_arp(char *mac){
 	struct ether_header *ep;
+	struct arp_header *arp;
 	ep = (struct ether_header*)packet;
+	arp = (struct arp_header*)packet+14;
 	for(int i=0; i<6; i++){
 		ep->ether_dhost[i] = 0xff;
 	}
@@ -52,6 +56,13 @@ void send_arp(){
 	ep->ether_shost[4] = 0xd5;
 	ep->ether_shost[5] = 0x90;
 	ep->ether_type = ntohs(ETHERTYPE_ARP);
-	memcpy(packet, ep->ether_dhost, 6);
-	memcpy(packet+6, ep->ether_shost, 6);
+	memcpy(packet, ep, sizeof(ep));
+	arp->hard_type = 0x01;
+	arp->procol_type = ETHERTYPE_IP;
+	arp->hard_size = 0x06;
+	arp->procol_size = 0x04;
+	arp->operation = 0x01;
+	memcpy(arp->s_mac, ep->ether_shost, 6);
+	inet_pton(AF_INET, mac, arp->s_ip);
+	
 }
