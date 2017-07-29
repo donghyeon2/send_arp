@@ -6,6 +6,8 @@
 #include <pcap/pcap.h>
 #include <string.h>
 #include <net/if_arp.h>
+#include <net/if.h> // using ifreq with get macaddr
+#include <sys/ioctl.h> // using ioctl function
 
 #define p_size 128
 #define PROTO_TYPE 0x04
@@ -19,7 +21,23 @@ struct mac_ip{
 	u_char d_mac[6];
 	u_char d_ip[4];
 }__attribute((__packed__));
-char* send_arp(char *s_ip, char *d_ip);
+
+void send_arp(char* mac, char *s_ip, char *d_ip);
+
+char *get_macaddr(char *ether){
+	int fd;
+	struct ifreq ifr;
+	char *iface = ether;
+	unsigned char *mac;
+	fd = socket(AF_INET, SOCK_DGRAM, 0);
+
+    ifr.ifr_addr.sa_family = AF_INET;
+    strncpy(ifr.ifr_name , iface , IFNAMSIZ-1);
+	ioctl(fd, SIOCGIFHWADDR, &ifr);
+	close(fd);
+	mac = (unsigned char *)ifr.ifr_hwaddr.sa_data;
+	return mac;
+}
 
 int main(int argc, char* argv[]){
 	pcap_t *fd;
@@ -31,34 +49,32 @@ int main(int argc, char* argv[]){
 		printf("device error %s \n", errbuf);
 		exit(1);
 	}
-	printf("BEST OF THE BEST 6TH ARP PACKET SENDER \t \n");
-	printf("BY github.com/donghyeon2 \t \n");
 	if(argc =! 3){
 		printf("***FOLLOW THIS [DEV] [MY_IP] [TARGET_IP]***\n");
 		exit(1);
 	}
-	send_arp(argv[2], argv[3]);
+	printf("BEST OF THE BEST 6TH ARP PACKET SENDER \t \n");
+	printf("BY github.com/donghyeon2 \t \n");
+	send_arp(argv[1], argv[2], argv[3]);
 	pcap_sendpacket(fd, packet, 42);
 	return 0;
 }
 
-char *send_arp(char *s_ip, char*d_ip){
+void send_arp(char* mac, char *s_ip, char*d_ip){
 	struct ether_header *ep;
 	ep = (struct ether_header*)packet;
 	struct arphdr *arph;
 	arph = (struct arphdr*)packet+sizeof(ep);
 	struct mac_ip *adr;
 	adr = (struct mac_ip*)packet+sizeof(ep)+sizeof(arph);
+	u_char parsing_mac[6];
+
 	for (int i = 0; i <6; i++)
 	{
-		ep->ether_dhost[i] = 0xff;
+		ep->ether_dhost[i] = 0xff; //broadcast//
 	}
-	ep->ether_shost[0] = 0x78;
-	ep->ether_shost[1] = 0x4f;
-	ep->ether_shost[2] = 0x43;
-	ep->ether_shost[3] = 0x78;
-	ep->ether_shost[4] = 0xb9;
-	ep->ether_shost[5] = 0x1f;
+	memcpy(parsing_mac, get_macaddr(mac), 6);
+	memcpy(ep->ether_shost, parsing_mac, 6);
 	ep->ether_type = ntohs(ETHERTYPE_ARP);
 	memcpy(packet, ep, sizeof(ep));
 	arph->ar_hrd = htons(ARPHRD_ETHER);
@@ -73,4 +89,3 @@ char *send_arp(char *s_ip, char*d_ip){
 	memcpy(adr->d_mac, ep->ether_dhost, 6);
 	memcpy(packet+22, adr, 20);
 }
-//78:4f:43:78:b9:1f //
