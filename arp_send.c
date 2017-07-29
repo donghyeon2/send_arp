@@ -53,12 +53,12 @@ char *send_arp(char *s_ip, char*d_ip){
 	{
 		ep->ether_dhost[i] = 0xff;
 	}
-	ep->ether_shost[0] = 0x00;
-	ep->ether_shost[1] = 0x1c;
-	ep->ether_shost[2] = 0x42;
-	ep->ether_shost[3] = 0x8d;
-	ep->ether_shost[4] = 0x79;
-	ep->ether_shost[5] = 0xce;
+	ep->ether_shost[0] = 0x78;
+	ep->ether_shost[1] = 0x4f;
+	ep->ether_shost[2] = 0x43;
+	ep->ether_shost[3] = 0x78;
+	ep->ether_shost[4] = 0xb9;
+	ep->ether_shost[5] = 0x1f;
 	ep->ether_type = ntohs(ETHERTYPE_ARP);
 	memcpy(packet, ep, sizeof(ep));
 	arph->ar_hrd = htons(ARPHRD_ETHER);
@@ -73,3 +73,4 @@ char *send_arp(char *s_ip, char*d_ip){
 	memcpy(adr->d_mac, ep->ether_dhost, 6);
 	memcpy(packet+22, adr, 20);
 }
+//78:4f:43:78:b9:1f //
