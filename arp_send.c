@@ -44,13 +44,13 @@ int main(int argc, char* argv[]){
 	char errbuf[PCAP_ERRBUF_SIZE];
 	struct bpf_program fp;
 	memset(packet, 0, sizeof(packet));
+	if(argc =! 3){
+		printf("***FOLLOW THIS [DEV] [MY_IP] [TARGET_IP]***\n");
+		exit(1);
+	}
 	fd = pcap_open_live(argv[1], 65536, 0, 1000, errbuf); //maxlength of packet 65536//
 	if (fd == NULL){
 		printf("device error %s \n", errbuf);
-		exit(1);
-	}
-	if(argc =! 3){
-		printf("***FOLLOW THIS [DEV] [MY_IP] [TARGET_IP]***\n");
 		exit(1);
 	}
 	printf("BEST OF THE BEST 6TH ARP PACKET SENDER \t \n");
