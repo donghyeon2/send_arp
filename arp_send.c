@@ -8,8 +8,9 @@
 #include <net/if_arp.h>
 
 #define p_size 128
-#define IPV4_ADDR_LEN 4
-#define HARD_TYPE 6
+#define PROTO_TYPE 0x04
+#define HARD_TYPE 0x06
+
 char packet[p_size];
 
 struct mac_ip{
@@ -25,17 +26,17 @@ int main(int argc, char* argv[]){
 	char errbuf[PCAP_ERRBUF_SIZE];
 	struct bpf_program fp;
 	memset(packet, 0, sizeof(packet));
-	if(argc =! 3){
-		printf("use this [dev] [my-ip] [target -ip]");
-		exit(1);
-	}
 	fd = pcap_open_live(argv[1], 65536, 0, 1000, errbuf); //maxlength of packet 65536//
 	if (fd == NULL){
 		printf("device error %s \n", errbuf);
 		exit(1);
 	}
-	printf("\t BEST OF THE BEST 6TH ARP PACKET SENDER \t \n");
-	printf("\t BY donghyeon2 \t \n");
+	printf("BEST OF THE BEST 6TH ARP PACKET SENDER \t \n");
+	printf("BY github.com/donghyeon2 \t \n");
+	if(argc =! 3){
+		printf("***FOLLOW THIS [DEV] [MY_IP] [TARGET_IP]***\n");
+		exit(1);
+	}
 	send_arp(argv[2], argv[3]);
 	pcap_sendpacket(fd, packet, 42);
 	return 0;
@@ -62,14 +63,13 @@ char *send_arp(char *s_ip, char*d_ip){
 	memcpy(packet, ep, sizeof(ep));
 	arph->ar_hrd = htons(ARPHRD_ETHER);
 	arph->ar_pro = htons(ETHERTYPE_IP);
-	arph->ar_hln = 0x06;
-	arph->ar_pln = 0x04;
+	arph->ar_hln = HARD_TYPE;
+	arph->ar_pln = PROTO_TYPE;
 	arph->ar_op = htons(ARPOP_REQUEST);
 	memcpy(packet+14, arph, 8);
+	inet_pton(AF_INET, s_ip, adr->s_ip); // converting to bit
 	memcpy(adr->s_mac, ep->ether_shost, 6);
-	inet_pton(AF_INET, s_ip, adr->s_ip);
-	memcpy(adr->s_mac, ep->ether_dhost, 6);
-	inet_pton(AF_INET, d_ip, adr->d_ip);
+	inet_pton(AF_INET, d_ip, adr->d_ip); // also @_@..
+	memcpy(adr->d_mac, ep->ether_dhost, 6);
 	memcpy(packet+22, adr, 20);
-	printf("%x\n", packet[20]);
 }
