@@ -23,21 +23,7 @@ struct mac_ip{
 }__attribute((__packed__));
 
 void send_arp(char* mac, char *s_ip, char *d_ip);
-
-char *get_macaddr(char *ether){
-	int fd;
-	struct ifreq ifr;
-	char *iface = ether;
-	unsigned char *mac;
-	fd = socket(AF_INET, SOCK_DGRAM, 0);
-
-    ifr.ifr_addr.sa_family = AF_INET;
-    strncpy(ifr.ifr_name , iface , IFNAMSIZ-1);
-	ioctl(fd, SIOCGIFHWADDR, &ifr);
-	close(fd);
-	mac = (unsigned char *)ifr.ifr_hwaddr.sa_data;
-	return mac;
-}
+char *get_macaddr(char *ether);
 
 int main(int argc, char* argv[]){
 	pcap_t *fd;
@@ -53,11 +39,29 @@ int main(int argc, char* argv[]){
 		printf("device error %s \n", errbuf);
 		exit(1);
 	}
-	printf("BEST OF THE BEST 6TH ARP PACKET SENDER \t \n");
-	printf("BY github.com/donghyeon2 \t \n");
+	printf("\tBEST OF THE BEST 6TH ARP PACKET SENDER \t \n");
+	printf("\tBY github.com/donghyeon2 \t \n");
 	send_arp(argv[1], argv[2], argv[3]);
 	pcap_sendpacket(fd, packet, 42);
 	return 0;
+}
+
+char *get_macaddr(char *ether){
+	int fd;
+	struct ifreq ifr;
+	char *iface = ether;
+	unsigned char *mac;
+	fd = socket(AF_INET, SOCK_DGRAM, 0);
+
+    ifr.ifr_addr.sa_family = AF_INET;
+    strncpy(ifr.ifr_name , iface , IFNAMSIZ-1);
+	ioctl(fd, SIOCGIFHWADDR, &ifr);
+	close(fd);
+	mac = (unsigned char *)ifr.ifr_hwaddr.sa_data;
+	printf("\t-----------------------------------------\n");
+	printf("\tsender MAC : %02X:%02X:%02X:%02X:%02X:%02X \n", 
+		mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+	return mac;
 }
 
 void send_arp(char* mac, char *s_ip, char*d_ip){
