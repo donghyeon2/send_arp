@@ -25,37 +25,42 @@ struct mac_ip{
 }__attribute__((__packed__));
 
 /*struct p_arphdr{
-	u_int16_t hardt;
+	u_short hardt;
 	u_int16_t prott;
 	u_char hlen;
 	u_char plen;
-	u_int16_t oper;
+	u_short oper;
 	u_char s_mac[6];
 	u_char s_ip[4];
 	u_char t_mac[6];
 	u_char t_ip[4];
-}__attribute__((__packed__));*/
-
+}__attribute__((__packed__));
+*/
 void send_arp(char* mac, char *s_ip, char *d_ip);
 char *get_macaddr(char *ether);
-void parsing_packet(d_packet);
 
 int main(int argc, char* argv[]){
 	pcap_t *fd, *fs;
 	char errbuf[PCAP_ERRBUF_SIZE];
+	char my_mac[6];
+	char *c_mac;
 	struct bpf_program fp;
+	struct p_arphdr *p_arp;
 	bpf_u_int32 net=0, mask=0;
 	struct pcap_pkthdr header;
 	int res=0;
-	const u_char *p = d_packet;
-	memset(s_packet, 0, sizeof(p_size));
-	memset(d_packet, 0, sizeof(p_size));
-	
-	if(argc =! 3){
-		printf("***FOLLOW THIS [DEV] [MY_IP] [TARGET_IP]***\n");
-		exit(1);
+	const u_char *parsing_pak = d_packet;
+	memset(s_packet, 0, p_size);
+	memset(d_packet, 0, p_size);
+
+	if(argc != 3){
+		printf("\t usage : [interface] [my ip] [target ip] \t \n");
 	}
-	fd = pcap_open_live(argv[1], 65536, 0, 1000, errbuf); //maxlength of packet 65536//
+	
+	printf("\t BEST OF THE BEST 6TH ARP PACKET SENDER \t \n");
+	printf("\t BY github.com/donghyeon2 \t \n");
+
+	fd = pcap_open_live(argv[1], 65536, 0, 1000, errbuf);
 	fs = pcap_open_live(argv[1], 65536, 0, 1000, errbuf);
 	if (fd == NULL || fs == NULL){
 		printf("device error %s \n", errbuf);
@@ -72,28 +77,25 @@ int main(int argc, char* argv[]){
 			printf("%s \n", errbuf);
 			exit(1);
 	}
-	printf("\t BEST OF THE BEST 6TH ARP PACKET SENDER \t \n");
-	printf("\t BY github.com/donghyeon2 \t \n");
 	send_arp(argv[1], argv[2], argv[3]);
 	pcap_sendpacket(fd, s_packet, 42);
-	while(res = pcap_next_ex(fs, &header, &p)>=0){
-		if(res==0){
-			printf(" NO ! \n"); //debug//
+	alarm(1);
+	while(res = pcap_next_ex(fs, &header, &parsing_pak)>=0){
+		if(res==0)
 			continue;
-		}
-		sleep(3);
-		if(p[21] == 2){
+		if(parsing_pak[21] == 2 ){
 			printf("\t ------------------------------------------ \n");
-			printf("\t target MAC : %02X:%02X:%02X:%02X:%02X:%02X \n",
-				p[0], p[1], p[2],
-				p[3], p[4], p[5]);
-			printf("\t sender MAC : %02X:%02X:%02X:%02X:%02X:%02X \n",
-				p[6], p[7], p[8], 
-				p[9], p[10], p[11]);
+			printf("\t target MAC \t : %02X:%02X:%02X:%02X:%02X:%02X \n",
+				parsing_pak[6], parsing_pak[7], parsing_pak[8],
+				parsing_pak[9], parsing_pak[10], parsing_pak[11]);
+			printf("\t my MAC \t : %02X:%02X:%02X:%02X:%02X:%02X \n",
+				parsing_pak[0], parsing_pak[1], parsing_pak[2], 
+				parsing_pak[3], parsing_pak[4], parsing_pak[5]);
+			printf("\t ------------------------------------------ \n");
 		
+			}
 		}
 	return 0;
-	}
 }
 char *get_macaddr(char *ether){
 	int fd;
@@ -106,11 +108,13 @@ char *get_macaddr(char *ether){
     strncpy(ifr.ifr_name , iface , IFNAMSIZ-1);
 	ioctl(fd, SIOCGIFHWADDR, &ifr);
 	close(fd);
+	
 	mac = (unsigned char *)ifr.ifr_hwaddr.sa_data;
 	return mac;
 }
 
 void send_arp(char* mac, char *s_ip, char*d_ip){
+	int i=0;
 	struct ether_header *ep;
 	ep = (struct ether_header*)s_packet;
 	struct arphdr *arph;
@@ -118,11 +122,11 @@ void send_arp(char* mac, char *s_ip, char*d_ip){
 	struct mac_ip *adr;
 	adr = (struct mac_ip*)s_packet+sizeof(ep)+sizeof(arph);
 	u_char parsing_mac[6];
-
-	for (int i = 0; i <6; i++)
-	{
-		ep->ether_dhost[i] = 0xff; //broadcast//
+	
+	for(i=0; i<6; i++){
+		ep->ether_dhost[i] = 0xff;
 	}
+
 	memcpy(parsing_mac, get_macaddr(mac), 6);
 	memcpy(ep->ether_shost, parsing_mac, 6);
 	ep->ether_type = ntohs(ETHERTYPE_ARP);
@@ -139,21 +143,3 @@ void send_arp(char* mac, char *s_ip, char*d_ip){
 	memcpy(adr->d_mac, ep->ether_dhost, 6);
 	memcpy(s_packet+22, adr, 20);
 }
-/*void parsing_packet(pcap_t *fd){
-	int i=0;
-	struct pcap_pkthdr header;
-	struct p_arphdr *ap;
-	ap = (struct p_arphdr*)d_packet+14;
-	while(1){
-		i = pcap_next_ex(fd, &header, &d_packet);
-			printf("\t ------------------------------------------ \n");
-			printf("\t sender MAC : %02X:%02X:%02X:%02X:%02X:%02X \n",
-				ap->s_mac[0], ap->s_mac[1], ap->s_mac[2],
-				ap->s_mac[3], ap->s_mac[4], ap->s_mac[5]);
-			printf("\t target MAC : %02X:%02X:%02X:%02X:%02X:%02X \n",
-				ap->t_mac[0], ap->t_mac[1], ap->t_mac[2], 
-				ap->t_mac[3], ap->t_mac[4], ap->t_mac[5]);
-		break;
-	}
-}
-*/
