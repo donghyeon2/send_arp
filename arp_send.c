@@ -103,9 +103,8 @@ char *get_macaddr(char *ether){
 	char *iface = ether;
 	unsigned char *mac;
 	fd = socket(AF_INET, SOCK_DGRAM, 0);
-
-    ifr.ifr_addr.sa_family = AF_INET;
-    strncpy(ifr.ifr_name , iface , IFNAMSIZ-1);
+    	ifr.ifr_addr.sa_family = AF_INET;
+    	strncpy(ifr.ifr_name , iface , IFNAMSIZ-1);
 	ioctl(fd, SIOCGIFHWADDR, &ifr);
 	close(fd);
 	
