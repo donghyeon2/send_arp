@@ -113,7 +113,6 @@ char *get_macaddr(char *ether){
 }
 
 void send_arp(char* mac, char *s_ip, char*d_ip){
-	int i=0;
 	struct ether_header *ep;
 	ep = (struct ether_header*)s_packet;
 	struct arphdr *arph;
@@ -122,12 +121,8 @@ void send_arp(char* mac, char *s_ip, char*d_ip){
 	adr = (struct mac_ip*)s_packet+sizeof(ep)+sizeof(arph);
 	u_char parsing_mac[6];
 	
-	for(i=0; i<6; i++){
-		ep->ether_dhost[i] = 0xff;
-	}
-
-	memcpy(parsing_mac, get_macaddr(mac), 6);
-	memcpy(ep->ether_shost, parsing_mac, 6);
+	memcpy(ep->ether_dhost, "\xff\xff\xff\xff\xff\xff", 6);
+	memcpy(ep->ether_shost, get_macaddr(mac), 6);
 	ep->ether_type = ntohs(ETHERTYPE_ARP);
 	memcpy(s_packet, ep, sizeof(ep));
 	arph->ar_hrd = htons(ARPHRD_ETHER);
