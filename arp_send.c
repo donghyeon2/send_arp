@@ -119,8 +119,7 @@ void send_arp(char* mac, char *s_ip, char*d_ip){
 	arph = (struct arphdr*)s_packet+sizeof(ep);
 	struct mac_ip *adr;
 	adr = (struct mac_ip*)s_packet+sizeof(ep)+sizeof(arph);
-	u_char parsing_mac[6];
-	
+		
 	memcpy(ep->ether_dhost, "\xff\xff\xff\xff\xff\xff", 6);
 	memcpy(ep->ether_shost, get_macaddr(mac), 6);
 	ep->ether_type = ntohs(ETHERTYPE_ARP);
